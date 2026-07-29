@@ -1,11 +1,4 @@
-variable "instance_type" {
-  default = "t2.medium"
+variable "subnet_id" {
+  type = string
 }
 
-variable "key_name" {
-  description = "Your EC2 key pair name"
-}
-
-variable "jenkins_port" {
-  default = 8080
-}

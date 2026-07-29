@@ -1,9 +1,8 @@
 resource "aws_security_group" "jenkins_sg" {
   name        = "jenkins-sg"
-  description = "Allow SSH and Jenkins"
+  description = "Allow Jenkins access"
 
   ingress {
-    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -11,11 +10,10 @@ resource "aws_security_group" "jenkins_sg" {
   }
 
   ingress {
-    description = "Jenkins"
-    from_port   = var.jenkins_port
-    to_port     = var.jenkins_port
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]   # You approved this
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -25,3 +23,4 @@ resource "aws_security_group" "jenkins_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
