@@ -13,3 +13,6 @@ terraform/crash.log
 terraform/*.tfvars
 terraform/*.tfvars.json
 
+*.tfvars
+*.tfvars.json
+
