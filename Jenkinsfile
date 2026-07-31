@@ -1,58 +1,68 @@
 pipeline {
     agent any
 
-    environment {
-        TF_VAR_region = "ap-southeast-1"
+    parameters {
+        choice(
+            name: 'INSTANCE_TYPE',
+            choices: ['t3.medium', 't3.small', 't3.large'],
+            description: 'EC2 instance type for the Jenkins controller (region is fixed to ap-southeast-1; see ADR-0001)'
+        )
     }
 
-    stages {
+    // No AWS credentials block: the Jenkins controller runs on an EC2
+    // instance with an IAM instance role (see terraform/iam.tf) that grants
+    // exactly the permissions these stages need. The AWS SDK/Terraform pick
+    // this up automatically - nothing to configure in Jenkins credentials.
 
+    stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/nepseli/dhl-infra-repo.git'
+                cleanWs()
+                checkout scm
             }
         }
 
         stage('Terraform Init') {
             steps {
-                sh '''
-                cd terraform
-                terraform init
-                '''
+                dir('terraform') {
+                    // Uses the S3 backend in backend.tf (bootstrap/ must be
+                    // applied once beforehand - see aws-console-setup-checklist.md).
+                    sh 'terraform init -input=false'
+                }
             }
         }
 
-        stage('Terraform Plan') {
+        stage('Terraform Plan & Approve') {
             steps {
-                sh '''
-                cd terraform
-                terraform plan -out=tfplan
-                '''
-            }
-        }
+                dir('terraform') {
+                    sh """
+                        terraform plan \
+                        -var="instance_type=${params.INSTANCE_TYPE}" \
+                        -out=tfplan
+                    """
+                }
 
-        stage('Approve Deployment') {
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    input message: "Apply Terraform changes?"
+                timeout(time: 15, unit: 'MINUTES') {
+                    script {
+                        input message: "Review the plan output above. Do you want to apply these infrastructure changes?",
+                              ok: "Approve & Deploy"
+                    }
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                sh '''
-                cd terraform
-                terraform apply -auto-approve tfplan
-                '''
+                dir('terraform') {
+                    sh 'terraform apply -input=false tfplan'
+                }
             }
         }
     }
 
     post {
-        always {
-            echo "Pipeline completed."
+        aborted {
+            echo "Pipeline aborted or timed out. The DynamoDB lock is released automatically when the terraform process exits."
         }
     }
 }
