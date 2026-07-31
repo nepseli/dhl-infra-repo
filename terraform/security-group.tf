@@ -1,19 +1,17 @@
 resource "aws_security_group" "jenkins_sg" {
   name        = "jenkins-sg"
-  description = "Allow Jenkins access"
+  description = "Allow Jenkins UI access; shell access is via SSM Session Manager, not SSH"
+
+  # No inbound rule for port 22: shell access goes through SSM Session
+  # Manager (see iam.tf's AmazonSSMManagedInstanceCore attachment), so there
+  # is no open SSH port or .pem key exposure at all.
 
   ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
+    description = "Jenkins UI"
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.admin_cidr]
   }
 
   egress {
@@ -22,5 +20,9 @@ resource "aws_security_group" "jenkins_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
 
+  tags = {
+    Project     = var.project
+    Environment = var.environment
+  }
+}

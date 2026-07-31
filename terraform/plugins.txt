@@ -1,0 +1,13 @@
+# Headless plugin list for the plugin-installation-manager-tool, installed
+# by user-data.sh on first boot. One artifact id per line, optionally
+# pinned to a version ("git:5.2.1"). Unpinned entries install "latest".
+# See: https://github.com/jenkinsci/plugin-installation-manager-tool
+git
+workflow-aggregator
+pipeline-stage-view
+credentials-binding
+aws-credentials
+timestamper
+ws-cleanup
+github-branch-source
+matrix-auth
